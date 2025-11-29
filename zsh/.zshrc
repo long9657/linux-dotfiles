@@ -41,3 +41,5 @@ SAVEHIST=10000
 setopt appendhistory
 
 eval "$(zoxide init zsh)"
+
+eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
