@@ -19,7 +19,7 @@ PKGS=(
     'base-devel'                # Compilers
     'git'                       # Version control
     'stow'                      # Dotfiles manager
-    'curl' 'wget' 'unzip' 'man-db'
+    'curl' 'wget' 'unzip' 'man-db' 'bat'
     'nvidia-inst'               # 🟢 Công cụ cài driver NVIDIA chuẩn của EndeavourOS
 
     # TERMINAL UTILITIES
