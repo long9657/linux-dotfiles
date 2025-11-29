@@ -2,7 +2,7 @@
 # export PATH=$HOME/bin:/usr/local/bin:$PATH
 export PATH="$PATH:$HOME/.local/share/bob/nvim-bin"
 export ZSH="$HOME/.oh-my-zsh"
-
+export PATH="/home/long/.local/share/bob/nightly/bin:$PATH"
 ZSH_THEME="robbyrussell"
 
 plugins=(
