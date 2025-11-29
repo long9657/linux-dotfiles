@@ -3,6 +3,7 @@
  * Maintainer: joekamprad [joekamprad //a_t// endeavouros.com]
  *******************************************************/
 configuration {
+    dpi : 250;
     font:                "Noto Sans Regular 10";
     show-icons:          true;
     icon-theme:          "Qogir";
