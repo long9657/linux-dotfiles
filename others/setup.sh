@@ -33,6 +33,7 @@ PKGS=(
     'fd'                        # Find siêu nhanh
     'tree'
     'discord'
+    'qutebrowser'
     # CLIPBOARD & GUI (i3/X11 Specific)
     'xclip'                     # Clipboard manager (Cần cho Nvim/i3)
     'picom'                     # Compositor (Cần cho Ghostty transparency)
