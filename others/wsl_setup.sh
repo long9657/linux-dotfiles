@@ -1,132 +1,97 @@
 #!/usr/bin/env bash
 #-------------------------------------------------------------------------
-#      _            _        __  __       _    _   
-#     /_\  _ _   __| |_     |  \/  |__ __| |_ (_)__ 
-#    / _ \| '_| / _| ' \    | |\/| / _` |  _| / _|
-#   /_/ \_\_| \__|_||_||_|  |_|  |_\__,_|\__|_\__|
-#  Fedora WSL Setup (CLI ONLY - DNF5 Compatible)
+#  Fedora WSL Setup (Fix Mirror 404 Issues)
 #-------------------------------------------------------------------------
 
-set -e # Dừng ngay nếu có lỗi
+set -e # Dừng nếu lỗi nghiêm trọng xảy ra
 
 echo
-echo "🚀 STARTING INSTALLATION (FEDORA WSL - CLI ONLY)..."
-echo "⚠️  LƯU Ý: Đảm bảo bạn đã chạy 'sudo dnf update' trước khi chạy script này."
+echo "🚀 STARTING INSTALLATION (RESILIENT MODE)..."
 echo
 
-# 1. OFFICIAL PACKAGES (DNF/DNF5) -----------------------------------------
-echo "📦 INSTALLING SYSTEM DEPENDENCIES..."
+# 1. FIX DNF & MIRRORS ----------------------------------------------------
+echo "🧹 Cleaning DNF cache to fix 404 errors..."
+# Xóa cache cũ để tránh lỗi "Metadata says file exists, but server says 404"
+sudo dnf clean all
 
-# --- FIX: Dùng cú pháp @Group thay vì groupinstall cho dnf5 ---
-sudo dnf install "@Development Tools" "@C Development Tools and Libraries" -y
+echo "🔄 Refreshing repositories..."
+# Ép buộc tải lại metadata mới nhất
+sudo dnf makecache --refresh
 
+# Cập nhật hệ thống trước để tránh xung đột phiên bản
+echo "⬆️  Upgrading system packages..."
+sudo dnf upgrade --refresh -y
+
+# 2. INSTALL BUILD TOOLS & ESSENTIALS -------------------------------------
+echo "📦 INSTALLING PACKAGES..."
+
+# Danh sách gói
 PKGS=(
-    # SYSTEM & DOTFILES MANAGEMENT
-    'git' 
-    'stow' 
-    'curl' 'wget' 'unzip' 'man-db' 'bat'
-    'openssl-devel'             # Cần thiết để compile nhiều tool
-
-    # TERMINAL UTILITIES
-    'zsh' 
-    'tmux' 
-    'lsd' 
-    'zoxide' 
-    'fzf' 
-    'ripgrep' 
-    'fd-find'                   # Tên gói trong Fedora là fd-find
-    'tree'
+    # Core Build Tools (Thay thế Development Tools group)
+    'gcc' 'gcc-c++' 'make' 'automake' 'autoconf' 'cmake' 
+    'pkgconf-pkg-config' 'libtool' 'openssl-devel'
     
-    # CLIPBOARD (Quan trọng cho Neovim/Tmux trong WSL)
-    'wl-clipboard'              # Giúp copy từ terminal Linux ra Windows
-    'xclip'                     # Fallback
+    # System Tools
+    'git' 'stow' 'curl' 'wget' 'unzip' 'man-db' 'bat'
+    'wl-clipboard' 'xclip'
     
-    # LANGUAGES & RUNTIMES
+    # Terminal Tools
+    'zsh' 'tmux' 'lsd' 'zoxide' 'fzf' 'ripgrep' 'fd-find' 'tree'
+    
+    # Runtimes
     'python3' 'python3-pip'
     'nodejs' 'npm'
     'java-latest-openjdk' 'java-latest-openjdk-devel'
-    'cargo'                     # Rust package manager (Cần để cài Bob)
+    'cargo'
 )
 
-echo "📦 INSTALLING PACKAGES (DNF)..."
-for PKG in "${PKGS[@]}"; do
-    # Kiểm tra gói đã cài chưa (hoạt động tốt trên cả dnf4 và dnf5)
-    if ! rpm -q "$PKG" &> /dev/null; then
-        echo "Installing $PKG..."
-        sudo dnf install "$PKG" -y
-    else
-        echo "✅ $PKG đã được cài đặt."
-    fi
-done
+# Cài đặt (Thêm --skip-broken để nếu 1 gói lỗi mirror thì không dừng cả script)
+# Thêm --refresh lần nữa cho chắc
+echo "⏳ Downloading and Installing..."
+sudo dnf install "${PKGS[@]}" --refresh --skip-broken -y
 
-# Fix tên lệnh fd (Fedora mặc định là fdfind, map lại thành fd)
+# 3. POST-INSTALL CONFIGURATION -------------------------------------------
+
+# Fix fd command
 if ! command -v fd &> /dev/null; then
-    echo "🔗 Linking fdfind to fd..."
-    sudo ln -s $(which fdfind) /usr/local/bin/fd
+    if command -v fdfind &> /dev/null; then
+        echo "🔗 Linking fdfind to fd..."
+        sudo ln -s $(which fdfind) /usr/local/bin/fd
+    fi
 fi
 
-# 2. EXTERNAL TOOLS (Cargo) -----------------------------------------------
-
-# --- CÀI BOB (Neovim Version Manager) ---
+# Cài Bob (Neovim Manager) via Cargo
 if ! command -v bob &> /dev/null; then
     echo "🦀 Installing Bob (via Cargo)..."
-    cargo install bob-nvim
+    # Source cargo env tạm thời nếu vừa cài xong
+    [ -f "$HOME/.cargo/env" ] && source "$HOME/.cargo/env"
     
-    # Đảm bảo cargo bin nằm trong PATH
+    cargo install bob-nvim
     export PATH="$HOME/.cargo/bin:$PATH"
-else
-    echo "✅ Bob đã được cài đặt."
 fi
-
-# 3. CONFIGURATION (ZSH & PLUGINS) ----------------------------------------
-echo
-echo "⚙️  CONFIGURING ZSH..."
 
 # Cài Oh My Zsh
 if [ ! -d "$HOME/.oh-my-zsh" ]; then
+    echo "⚙️  Installing Oh My Zsh..."
     sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended
 fi
 
-ZSH_CUSTOM=${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}
-
-# --- CÀI PLUGIN ZSH ---
-if [ ! -d "$ZSH_CUSTOM/plugins/zsh-autosuggestions" ]; then
-    echo "🔌 Cloning zsh-autosuggestions..."
-    git clone https://github.com/zsh-users/zsh-autosuggestions "$ZSH_CUSTOM/plugins/zsh-autosuggestions"
-fi
-
-if [ ! -d "$ZSH_CUSTOM/plugins/zsh-syntax-highlighting" ]; then
-    echo "🔌 Cloning zsh-syntax-highlighting..."
-    git clone https://github.com/zsh-users/zsh-syntax-highlighting.git "$ZSH_CUSTOM/plugins/zsh-syntax-highlighting"
-fi
-
-# 4. TMUX PLUGIN MANAGER (TPM) --------------------------------------------
-echo
-echo "🔌 CONFIGURING TMUX (TPM)..."
+# Cài TPM
 if [ ! -d "$HOME/.tmux/plugins/tpm" ]; then
-    echo "📥 Cloning Tmux Plugin Manager..."
+    echo "🔌 Installing Tmux Plugin Manager..."
     git clone https://github.com/tmux-plugins/tpm ~/.tmux/plugins/tpm
-else
-    echo "✅ TPM already installed."
 fi
 
-# 5. FINISHING UP ---------------------------------------------------------
-
-# Đổi shell sang Zsh
+# Đổi Shell
 if [ "$SHELL" != "$(which zsh)" ]; then
-    echo "🔄 Changing shell to Zsh..."
-    # Thử lchsh trước (thường có trên Fedora), nếu không thì dùng chsh
+    echo "🔄 Changing shell..."
     if command -v lchsh &> /dev/null; then
         sudo lchsh -i "$USER"
     else
-        chsh -s $(which zsh)
+        sudo chsh -s $(which zsh) "$USER"
     fi
 fi
 
 echo
-echo "✅ DONE! Setup CLI hoàn tất."
-echo "--------------------------------------------------------"
-echo "👉 LƯU Ý:"
-echo "   Nếu gặp lỗi về path của Cargo/Bob, hãy chạy lệnh sau hoặc reload shell:"
-echo "   source ~/.bashrc  (hoặc source ~/.zshrc)"
+echo "✅ DONE! (Nếu có gói nào bị skip do lỗi mirror, hãy chạy lại script sau vài giờ)"
 echo "--------------------------------------------------------"
