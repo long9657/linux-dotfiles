@@ -4,7 +4,7 @@
 #     /_\  _ _   __| |_     |  \/  |__ __| |_ (_)__ 
 #    / _ \| '_| / _| ' \    | |\/| / _` |  _| / _|
 #   /_/ \_\_| \__|_||_||_|  |_|  |_\__,_|\__|_\__|
-#  Fedora WSL Setup (CLI ONLY - No GUI Apps)
+#  Fedora WSL Setup (CLI ONLY - DNF5 Compatible)
 #-------------------------------------------------------------------------
 
 set -e # Dừng ngay nếu có lỗi
@@ -14,10 +14,11 @@ echo "🚀 STARTING INSTALLATION (FEDORA WSL - CLI ONLY)..."
 echo "⚠️  LƯU Ý: Đảm bảo bạn đã chạy 'sudo dnf update' trước khi chạy script này."
 echo
 
-# 1. OFFICIAL PACKAGES (DNF) ----------------------------------------------
+# 1. OFFICIAL PACKAGES (DNF/DNF5) -----------------------------------------
 echo "📦 INSTALLING SYSTEM DEPENDENCIES..."
-# Cài đặt nhóm công cụ phát triển cơ bản (gcc, make, v.v.)
-sudo dnf groupinstall "Development Tools" "C Development Tools and Libraries" -y
+
+# --- FIX: Dùng cú pháp @Group thay vì groupinstall cho dnf5 ---
+sudo dnf install "@Development Tools" "@C Development Tools and Libraries" -y
 
 PKGS=(
     # SYSTEM & DOTFILES MANAGEMENT
@@ -36,7 +37,7 @@ PKGS=(
     'fd-find'                   # Tên gói trong Fedora là fd-find
     'tree'
     
-    # CLIPBOARD (Cực kỳ quan trọng cho Neovim/Tmux trong WSL)
+    # CLIPBOARD (Quan trọng cho Neovim/Tmux trong WSL)
     'wl-clipboard'              # Giúp copy từ terminal Linux ra Windows
     'xclip'                     # Fallback
     
@@ -49,6 +50,7 @@ PKGS=(
 
 echo "📦 INSTALLING PACKAGES (DNF)..."
 for PKG in "${PKGS[@]}"; do
+    # Kiểm tra gói đã cài chưa (hoạt động tốt trên cả dnf4 và dnf5)
     if ! rpm -q "$PKG" &> /dev/null; then
         echo "Installing $PKG..."
         sudo dnf install "$PKG" -y
@@ -57,7 +59,7 @@ for PKG in "${PKGS[@]}"; do
     fi
 done
 
-# Fix tên lệnh fd (Fedora mặc định là fdfind, map lại thành fd cho giống Arch/Ubuntu)
+# Fix tên lệnh fd (Fedora mặc định là fdfind, map lại thành fd)
 if ! command -v fd &> /dev/null; then
     echo "🔗 Linking fdfind to fd..."
     sudo ln -s $(which fdfind) /usr/local/bin/fd
@@ -66,7 +68,6 @@ fi
 # 2. EXTERNAL TOOLS (Cargo) -----------------------------------------------
 
 # --- CÀI BOB (Neovim Version Manager) ---
-# Vì không cài GUI, ta dùng Bob để quản lý Neovim (AppImage/Source)
 if ! command -v bob &> /dev/null; then
     echo "🦀 Installing Bob (via Cargo)..."
     cargo install bob-nvim
@@ -114,19 +115,18 @@ fi
 # Đổi shell sang Zsh
 if [ "$SHELL" != "$(which zsh)" ]; then
     echo "🔄 Changing shell to Zsh..."
-    sudo lchsh -i "$USER" # Fedora đôi khi cần lchsh thay vì chsh
+    # Thử lchsh trước (thường có trên Fedora), nếu không thì dùng chsh
+    if command -v lchsh &> /dev/null; then
+        sudo lchsh -i "$USER"
+    else
+        chsh -s $(which zsh)
+    fi
 fi
 
 echo
 echo "✅ DONE! Setup CLI hoàn tất."
 echo "--------------------------------------------------------"
-echo "👉 LƯU Ý CHO BẢN NO-GUI:"
-echo "1. Font chữ: Vì không cài font trong Linux, hãy đảm bảo Windows Terminal"
-echo "   (hoặc WezTerm/Alacritty trên Windows) đang dùng 'Nerd Font'."
-echo ""
-echo "2. Clipboard: Đã cài 'wl-clipboard'. Trong Neovim, hãy set clipboard provider"
-echo "   để copy paste được ra ngoài Windows."
-echo ""
-echo "3. Neovim: Hãy dùng lệnh 'bob install stable' sau đó 'bob use stable'"
-echo "   để cài Neovim mới nhất."
+echo "👉 LƯU Ý:"
+echo "   Nếu gặp lỗi về path của Cargo/Bob, hãy chạy lệnh sau hoặc reload shell:"
+echo "   source ~/.bashrc  (hoặc source ~/.zshrc)"
 echo "--------------------------------------------------------"
