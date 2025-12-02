@@ -34,7 +34,7 @@ PKGS=(
     # System Tools
     'git' 'stow' 'curl' 'wget' 'unzip' 'man-db' 'bat'
     'wl-clipboard' 'xclip'
-    
+    'gawk'
     # Terminal Tools
     'zsh' 'tmux' 'lsd' 'zoxide' 'fzf' 'ripgrep' 'fd-find' 'tree'
     
