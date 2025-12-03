@@ -37,7 +37,7 @@ PKGS=(
     'gawk'
     # Terminal Tools
     'zsh' 'tmux' 'lsd' 'zoxide' 'fzf' 'ripgrep' 'fd-find' 'tree'
-    
+    'tree-sitter-cli'
     # Runtimes
     'python3' 'python3-pip'
     'nodejs' 'npm'
