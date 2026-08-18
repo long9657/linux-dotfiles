@@ -9,18 +9,18 @@ echo
 echo "🚀 STARTING INSTALLATION (FINAL VERSION)..."
 echo
 
-# 1. FIX DNF & MIRRORS ----------------------------------------------------
-echo "🧹 Cleaning DNF cache to fix 404 errors..."
-# Xóa cache cũ để tránh lỗi "Metadata says file exists, but server says 404"
-sudo dnf clean all
+# # 1. FIX DNF & MIRRORS ----------------------------------------------------
+# echo "🧹 Cleaning DNF cache to fix 404 errors..."
+# # Xóa cache cũ để tránh lỗi "Metadata says file exists, but server says 404"
+# sudo dnf clean all
 
-echo "🔄 Refreshing repositories..."
-# Ép buộc tải lại metadata mới nhất
-sudo dnf makecache --refresh
+# echo "🔄 Refreshing repositories..."
+# # Ép buộc tải lại metadata mới nhất
+# sudo dnf makecache --refresh
 
-# Cập nhật hệ thống trước để tránh xung đột phiên bản
-echo "⬆️  Upgrading system packages..."
-sudo dnf upgrade --refresh -y
+# # Cập nhật hệ thống trước để tránh xung đột phiên bản
+# echo "⬆️  Upgrading system packages..."
+# sudo dnf upgrade --refresh -y
 
 # 2. INSTALL PACKAGES (CLI TOOLS ONLY) ------------------------------------
 echo "📦 INSTALLING PACKAGES..."
